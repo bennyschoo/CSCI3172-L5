@@ -11,3 +11,6 @@ const router = express.Router();
 router.get("/bruh", (req, res)=>{
     res.status(200).json("{'hi!':'hoasd'}")
 })
+
+api.use("/api", router);
+export const handler = serverless(api);
