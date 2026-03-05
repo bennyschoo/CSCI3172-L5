@@ -8,8 +8,12 @@ dotenv.config();
 const api = express();
 const router = express.Router();
 
-router.get("/bruh", (req, res)=>{
-    res.status(200).json("{'hi!':'hoasd'}")
+router.post("/song_recomendation", (req, res) => {
+
+})
+
+router.post("/artist_recomendation", (req, res) => {
+    
 })
 
 api.use("/api", router);
