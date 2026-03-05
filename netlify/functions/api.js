@@ -9,5 +9,5 @@ const api = express();
 const router = express.Router();
 
 router.get("/bruh", (req, res)=>{
-    res.send("HI!")
+    res.status(200).json("{'hi!':'hoasd'}")
 })
