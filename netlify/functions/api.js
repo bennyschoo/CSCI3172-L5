@@ -34,7 +34,7 @@ router.get("/song_recommendation", async (req, res) => {
         "Content-Type":"text/json",
         "Cache-Control": "no-cache"
     })
-    res.end(JSON.stringify({token: accessToken}))
+    res.end(JSON.stringify({token: "NOPE!"}))
 })
 
 router.get("/artist_recommendation", async (req, res) => {
