@@ -30,12 +30,12 @@ async function getAccessToken(clientID, secret) {
 getAccessToken(spotifyClientId, spotifySecret);
 
 
-router.post("/song_recommendation", async (req, res) => {
+router.get("/song_recommendation", async (req, res) => {
     const accessToken = await getAccessToken(spotifyClientId, spotifySecret)
     res.json({token: accessToken})
 })
 
-router.post("/artist_recommendation", async (req, res) => {
+router.get("/artist_recommendation", async (req, res) => {
     const accessToken = await getAccessToken(spotifyClientId, spotifySecret)
     res.json({token: accessToken})
 })
