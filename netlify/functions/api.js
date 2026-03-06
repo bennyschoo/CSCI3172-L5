@@ -27,14 +27,14 @@ const getAccessToken = async (clientID, secret) => {
     }
 }
 
-router.post("/song_recomendation", async (req, res) => {
+router.post("/song_recommendation", async (req, res) => {
     const accessToken = getAccessToken(spotifyClientId, spotifySecret)
-    res.send(accessToken)
+    res.json({token: accessToken})
 })
 
-router.post("/artist_recomendation", (req, res) => {
+router.post("/artist_recommendation", (req, res) => {
     const accessToken = getAccessToken(spotifyClientId, spotifySecret)
-    res.send(accessToken)
+    res.json({token: accessToken})
 })
 
 api.use("/api", router);
