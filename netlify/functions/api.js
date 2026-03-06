@@ -9,7 +9,7 @@ const api = express();
 const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
-
+getAccessToken(spotifyClientId, spotifySecret);
 const getAccessToken = async (clientID, secret) => {
     try{
         const res = await fetch("https://accounts.spotify.com/api/token", {
@@ -20,6 +20,7 @@ const getAccessToken = async (clientID, secret) => {
             body:f`grant_type=client_credentials&client_id=${spotifyClientId}&client_secret=${spotifySecret}`
         });
         const json = await res.json();
+        console.log(json.accessToken)
         return json.token_type + " " + json.access_token
     }
     catch{
