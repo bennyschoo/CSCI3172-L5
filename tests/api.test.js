@@ -1,11 +1,11 @@
 import request from "supertest";
 import { handler } from "../netlify/functions/api.js";
 
-describe("Weather API", () => {
-    it("should return weather data for a valid city", async () => {
-        const res = await request(handler).get("/api/weather?city=London");
+describe("Recommendation Api", () => {
+    it("should return artist data for an artist search", async () => {
+        const res = await request(handler).get("/api/artists?name=beatles");
         expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty("city");
+        expect(res.body[0]).toHaveProperty("name");
     });
     it("should return an error for missing city", async () => {
         const res = await request(handler).get("/api/weather");
