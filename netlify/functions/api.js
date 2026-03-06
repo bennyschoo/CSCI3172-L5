@@ -9,8 +9,7 @@ const api = express();
 const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
-getAccessToken(spotifyClientId, spotifySecret);
-const getAccessToken = async (clientID, secret) => {
+async function getAccessToken(clientID, secret) {
     try{
         const res = await fetch("https://accounts.spotify.com/api/token", {
             method: "POST",
@@ -28,13 +27,16 @@ const getAccessToken = async (clientID, secret) => {
     }
 }
 
+getAccessToken(spotifyClientId, spotifySecret);
+
+
 router.post("/song_recommendation", async (req, res) => {
-    const accessToken = getAccessToken(spotifyClientId, spotifySecret)
+    const accessToken = await getAccessToken(spotifyClientId, spotifySecret)
     res.json({token: accessToken})
 })
 
-router.post("/artist_recommendation", (req, res) => {
-    const accessToken = getAccessToken(spotifyClientId, spotifySecret)
+router.post("/artist_recommendation", async (req, res) => {
+    const accessToken = await getAccessToken(spotifyClientId, spotifySecret)
     res.json({token: accessToken})
 })
 
