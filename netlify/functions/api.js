@@ -10,6 +10,7 @@ const api = express();
 const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
+const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
 
 // Get spotify access token
 async function getAccessTokenHeader(clientID, secret) {
@@ -32,6 +33,22 @@ async function getAccessTokenHeader(clientID, secret) {
     }
 }
 
+async function makeSpotifyRequest(reqUrl){
+    const reqHeaders = {
+        "Authorization": accessHeader
+    }
+    try{
+        const res = await fetch(reqUrl, {
+            method: "GET",
+            headers: reqHeaders
+        });
+        const spotifyResults = await res.json();
+        return spotifyResults
+    } catch (e){
+        return e
+    }
+}
+
 function convertSpotifyArtistSearchResults(results){
     const artists = []
     for(let result of results.artists.items){
@@ -49,23 +66,52 @@ function convertSpotifyArtistSearchResults(results){
     return artists
 }
 
-function convertSpotifyRelatedArtistResults(results){
-    const artists = []
-    for(let result of results.artists){
-        let artist = {}
-        artist.spotifyURL = result.external_urls.spotify
-        artist.id = result.id
-        artist.followers = result.followers.total
-        try{
-            artist.imageURL = result.images[0].url
-        } catch{
-            artist.imageURL = null
+function getContributingArtistsID(tracks, currArtistID){
+    const artists=[]
+    for(let track of tracks){
+        for(let artist of track.artists){
+            if(artist.id != currArtistID){
+                artists.push(artist.id);
+            }
         }
-        artist.popularity
-        artist.name = result.name
-        artists.push(artist)
     }
-    return artists
+    return artists;
+}
+
+async function getArtistsData(artistIDs){
+    const artistsData = []
+    for(let artistID of artistIDs){
+        const artistdata = await getArtist(artistID)
+        if(artistdata instanceof Error){
+            return artistdata
+        }
+        artistsData.push(artistdata)
+    }
+    return artistsData
+}
+
+async function getArtistsAlbums(id){
+    const reqUrl = `https://api.spotify.com/v1/artists/${id}/albums?limit=10`
+    const result = await makeSpotifyRequest(reqUrl)
+    return result.items
+}
+
+async function getArtists(name){
+    const reqUrl = `https://api.spotify.com/v1/search?q=artist:${name}&type=artist&limit=10`
+    const result = await makeSpotifyRequest(reqUrl)
+    return result
+}
+
+async function getAlbum(id){
+    const reqUrl = `https://api.spotify.com/v1/albums/${id}`
+    const result = await makeSpotifyRequest(reqUrl)
+    return result
+}
+
+async function getArtist(id){
+    const reqUrl = `https://api.spotify.com/v1/artists/${id}`
+    const result = await makeSpotifyRequest(reqUrl)
+    return result
 }
 
 // API endpoint for searching up artists
@@ -78,18 +124,9 @@ router.get("/search_artist", [
             res.status(400).json({ errors: errors.array() });
             return
         }
-
-        let spotifyResults
-        const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
-        const artistName = req.query.artistName
-        const searchType = "artist"
-        const reqUrl = `https://api.spotify.com/v1/search?q=artist:${artistName}&type=${searchType}&limit=10`
-        const reqHeaders = {
-            "Authorization": accessHeader
-        }
-
+        
         // return error if there was an issue with the url params
-        if(!artistName){
+        if(!req.query.artistName){
             res.status(400).json({ error: "Missing 'artistName' url param"})
             return
         }
@@ -100,34 +137,28 @@ router.get("/search_artist", [
             return
         }
 
-        try{
-            const spotifyRes = await fetch(reqUrl, {
-                method: "GET",
-                headers: reqHeaders
-            });
-            spotifyResults = await spotifyRes.json();
-        } catch (e){
-            res.status(500).json({ error: `Internal Server Error: ${e}`})
-            return
+        const artists = await getArtists(req.query.artistName)
+        
+        if(artists instanceof Error) {
+            res.status(500).json({ error: `Internal Server Error: ${artists}`})
         }
 
-        if(!spotifyResults){
+        if(!artists){
             res.status(500).json({ error: "Internal Server Error"})
             return
         }
 
         try{
-            const convertedResults = convertSpotifyArtistSearchResults(spotifyResults)
+            const convertedResults = convertSpotifyArtistSearchResults(artists)
+            res.writeHead(200, {
+                "Content-Type":"text/json",
+                "Cache-Control": "no-cache"
+            })
+            res.end(JSON.stringify(convertedResults))
         } catch (e){
             res.status(500).json({ error: `Internal Server Error: ${e}`})
             return
         }
-
-        res.writeHead(200, {
-            "Content-Type":"text/json",
-            "Cache-Control": "no-cache"
-        })
-        res.end(JSON.stringify(spotifyResults))
     }
 )
 
@@ -151,16 +182,10 @@ router.get("/artist_recommendation", [
             return
         }
 
-        let spotifyResults
-        const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
-        const artistID = req.query.id
-        const reqUrl = `https://api.spotify.com/v1/artists/${artistID}/related-artists`
-        const reqHeaders = {
-            "Authorization": accessHeader
-        }
-
-         // return error if there was an issue with the url params
-        if(!artistID){
+        const id = req.query.id;
+         
+        // return error if there was an issue with the url params
+        if(!id){
             res.status(400).json({ error: "Missing 'id' url param"})
             return
         }
@@ -170,35 +195,64 @@ router.get("/artist_recommendation", [
             res.status(500).json({ error: "Internal Server Error: missing access token"})
             return
         }
+        
+        const albums = await getArtistsAlbums(id);
+        
+        if(albums instanceof Error) {
+            res.status(500).json({ error: `Internal Server Error: ${albums}`})
+        }
 
-        try{
-            const spotifyRes = await fetch(reqUrl, {
-                method: "GET",
-                headers: reqHeaders
-            });
-            spotifyResults = await spotifyRes.json();
-        } catch (e){
-            res.status(500).json({ error: `Internal Server Error: ${e}`})
+        if(!albums){
+            res.writeHead(200, {
+                "Content-Type":"text/json",
+                "Cache-Control": "no-cache"
+             })
+            res.end(JSON.stringify({
+                recommendedArtists: albums,
+                error: "Artist has no album data"
+            }))
             return
         }
 
-        if(!spotifyResults){
-            res.status(500).json({ error: "Internal Server Error"})
+        const randIndex = Math.trunc(Math.random() * (albums.length))
+        const randAlbumID = albums[randIndex].id
+        const randAlbum = await getAlbum(randAlbumID)
+
+        if(randAlbum instanceof Error) {
+            res.status(500).json({ error: `Internal Server Error: ${randAlbum}`})
+        }
+
+        if(!randAlbum){
+            res.status(500).json({ error: "Internal Server Error: Error in album retreival logic"})
             return
         }
 
-        // try{
-        //     const convertedResults = convertSpotifyRelatedArtistResults(spotifyResults)
-        // } catch (e){
-        //     res.status(500).json({ error: `Internal Server Error: ${e}`})
-        //     return
-        // }
+        const contributingArtistIDs = getContributingArtistsID(randAlbum.tracks.items, id)
+
+        if(!contributingArtistIDs){
+            res.writeHead(200, {
+                "Content-Type":"text/json",
+                "Cache-Control": "no-cache"
+             })
+            res.end(JSON.stringify({
+                recommendedArtists: contributingArtistIDs,
+                error: "No related artists"
+            }))
+            return
+        }
+
+        // need to modify getArtistsData function to filter for only useful data
+        const contributingArtists = await getArtistsData(contributingArtistIDs)
+
+        if(contributingArtists instanceof Error) {
+            res.status(500).json({ error: `Internal Server Error: ${contributingArtists}`})
+        }
 
         res.writeHead(200, {
             "Content-Type":"text/json",
             "Cache-Control": "no-cache"
         })
-        res.end(JSON.stringify(spotifyResults))
+        res.end(JSON.stringify(contributingArtists))
     }
 )
 
