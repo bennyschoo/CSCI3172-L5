@@ -32,7 +32,7 @@ async function getAccessTokenHeader(clientID, secret) {
     }
 }
 
-function convertSpotifyArtistResults(results){
+function convertSpotifyArtistSearchResults(results){
     const artists = []
     for(let result of results.artists.items){
         let artist = {}
@@ -43,6 +43,25 @@ function convertSpotifyArtistResults(results){
         } catch{
             artist.imageURL = null
         }
+        artist.name = result.name
+        artists.push(artist)
+    }
+    return artists
+}
+
+function convertSpotifyRelatedArtistResults(results){
+    const artists = []
+    for(let result of results.artists){
+        let artist = {}
+        artist.spotifyURL = result.external_urls.spotify
+        artist.id = result.id
+        artist.followers = result.followers.total
+        try{
+            artist.imageURL = result.images[0].url
+        } catch{
+            artist.imageURL = null
+        }
+        artist.popularity
         artist.name = result.name
         artists.push(artist)
     }
@@ -77,7 +96,7 @@ router.get("/search_artist", [
 
         // return error if there was an issue with the spotify access token
         if(!accessHeader){
-            res.status(500).json({ error: "Internal Server Error"})
+            res.status(500).json({ error: "Internal Server Error: missing access token"})
             return
         }
 
@@ -87,9 +106,8 @@ router.get("/search_artist", [
                 headers: reqHeaders
             });
             spotifyResults = await spotifyRes.json();
-        }
-        catch{
-            res.status(500).json({ error: "Internal Server Error"})
+        } catch (e){
+            res.status(500).json({ error: `Internal Server Error: ${e}`})
             return
         }
 
@@ -98,13 +116,18 @@ router.get("/search_artist", [
             return
         }
 
-        const convertedResults = convertSpotifyArtistResults(spotifyResults)
+        try{
+            const convertedResults = convertSpotifyArtistSearchResults(spotifyResults)
+        } catch (e){
+            res.status(500).json({ error: `Internal Server Error: ${e}`})
+            return
+        }
 
         res.writeHead(200, {
             "Content-Type":"text/json",
             "Cache-Control": "no-cache"
         })
-        res.end(JSON.stringify(convertedResults))
+        res.end(JSON.stringify(spotifyResults))
     }
 )
 
@@ -118,10 +141,66 @@ router.get("/song_recommendation", async (req, res) => {
 })
 
 // API endpoint for getting recommended artists
-router.get("/artist_recommendation", async (req, res) => {
-    const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+router.get("/artist_recommendation", [
+    query("id").trim().escape(),
+],  async (req, res) => {
+        // return error if there was an issue with the validation
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.status(400).json({ errors: errors.array() });
+            return
+        }
 
-})
+        let spotifyResults
+        const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+        const artistID = req.query.id
+        const reqUrl = `https://api.spotify.com/v1/artists/${artistID}/related-artists`
+        const reqHeaders = {
+            "Authorization": accessHeader
+        }
+
+         // return error if there was an issue with the url params
+        if(!artistID){
+            res.status(400).json({ error: "Missing 'id' url param"})
+            return
+        }
+
+        // return error if there was an issue with the spotify access token
+        if(!accessHeader){
+            res.status(500).json({ error: "Internal Server Error: missing access token"})
+            return
+        }
+
+        try{
+            const spotifyRes = await fetch(reqUrl, {
+                method: "GET",
+                headers: reqHeaders
+            });
+            spotifyResults = await spotifyRes.json();
+        } catch (e){
+            res.status(500).json({ error: `Internal Server Error: ${e}`})
+            return
+        }
+
+        if(!spotifyResults){
+            res.status(500).json({ error: "Internal Server Error"})
+            return
+        }
+
+        // try{
+        //     const convertedResults = convertSpotifyRelatedArtistResults(spotifyResults)
+        // } catch (e){
+        //     res.status(500).json({ error: `Internal Server Error: ${e}`})
+        //     return
+        // }
+
+        res.writeHead(200, {
+            "Content-Type":"text/json",
+            "Cache-Control": "no-cache"
+        })
+        res.end(JSON.stringify(spotifyResults))
+    }
+)
 
 
 api.use("/api", router);
