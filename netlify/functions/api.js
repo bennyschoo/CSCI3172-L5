@@ -11,8 +11,9 @@ const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
 const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
-const maxApiRequests = 10
-
+const MAX_API_REQUESTS = 10
+const MAX_ARTISTS = 10
+const MAX_SONGS = 20
 // Get spotify access token
 async function getAccessTokenHeader(clientID, secret) {
     try{
@@ -107,6 +108,47 @@ async function getArtistsDataFromIDList(artistIDs){
     return artistsData
 }
 
+async function getRandomSongsFromArtistAlbumsList(albums){
+    const songs = []
+    for(let album of albums){
+        // Break if we are getting too many songs
+        if(songs.length >= MAX_SONGS){
+            break;
+        }
+
+        const albumData = await getAlbum(album.id)
+        const tracks = albumData.tracks.items
+
+        // Random number of tracks to select from album
+        // Use a set to determine if the index was already used
+        const numTracks = Math.min(Math.trunc(Math.random() * 3) + 1, tracks.length-1)
+        const usedIndexes = new Set()
+        for(let i=0; i<numTracks; i++){
+            // Get randomIndex
+            let randIndex
+            do{
+                randIndex = Math.trunc(Math.random() * tracks.length)
+            } while (usedIndexes.has(randIndex))
+            usedIndexes.add(randIndex)
+
+            const track = tracks[randIndex]
+
+            // extract the useful track data
+            const extractedTrackData = {}
+            extractedTrackData.name = track.name
+            extractedTrackData.spotifyURL = track.external_urls.spotify
+            extractedTrackData.id = track.id
+            try{
+                extractedTrackData.imageURL = albumData.images[0].url
+            } catch {
+                extractedTrackData.imageURL = null
+            }
+            songs.push(extractedTrackData)
+        }
+    }
+    return songs
+}
+
 async function getArtistsAlbums(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}/albums?limit=10`
     const result = await makeSpotifyRequest(reqUrl)
@@ -185,14 +227,94 @@ router.get("/search_artist", [
 )
 
 // API endpoint for getting recommended songs
-router.get("/song_recommendation", async (req, res) => {
-    const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
-    res.writeHead(200, {
-        "Content-Type":"text/json",
-        "Cache-Control": "no-cache"
-    })
-    res.end(JSON.stringify({token: "NOPE!"}))
-})
+// The spotify song recommendation API is deprecated and can't be used
+// because of this I am simply going to choose 1 random song from their 10 latest albums.
+router.get("/song_recommendation", [
+    query("id").trim().escape(),
+],  async (req, res) => {
+    // return error if there was an issue with the validation
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.status(400).json({ errors: errors.array() });
+            return
+        }
+
+        res.writeHead(200, {
+            "Content-Type":"text/json",
+            "Cache-Control": "no-cache"
+        })
+
+        const id = req.query.id;
+
+        // return error if there was an issue with the url params
+        if(!id){
+            res.status(400).json({ error: "Missing 'id' url param"})
+            return
+        }
+
+        // return error if there was an issue with the spotify access token
+        if(!accessHeader){
+            res.status(500).json({ error: "Internal Server Error: missing access token"})
+            return
+        }
+
+        // Each album response from spotify contains a url to get the next list of albums
+        // This loop is used to continue searching the albums until atleast 20 songs are found.
+        // i<10 so that I do not make too many requests to the spotify API and get blocked.
+        let artistAlbumsRawData = await getArtistsAlbums(id)
+        const allSongs = []
+        for (let i=0; i<MAX_API_REQUESTS; i++) {
+            // Send error to client
+            if(artistAlbumsRawData instanceof Error) {
+                res.status(500).json({ error: `Internal Server Error: ${artistAlbumsRawData}`})
+                return
+            }
+
+            const artistAlbums = artistAlbumsRawData.items;
+            
+            // Send OK response with empty list
+            if(!artistAlbums || artistAlbums.length==0){
+                res.end(JSON.stringify({
+                    recommendedSongs: artistAlbums,
+                    error: "Artist has no album data"
+                }))
+                return
+            }
+
+            const songs = await getRandomSongsFromArtistAlbumsList(artistAlbums)
+
+
+            if(songs instanceof Error) {
+                res.status(500).json({ error: `Internal Server Error: ${songs}`})
+                return
+            }
+
+            allSongs.push(...songs)
+            
+            // If there are more albums and we have found less then 10 artists, continue search,
+            // if not, break.
+            if(artistAlbumsRawData.next && allSongs.length<=MAX_SONGS){
+                artistAlbumsRawData = await getNextAlbum(artistAlbumsRawData.next)
+            } else{
+                break;
+            }
+        }
+        
+        // If no other artists found on any albums 
+        if(!allSongs || allSongs.length==0){
+            res.end(JSON.stringify({
+                recommendedSongs: allSongs,
+                error: "No related artists"
+            }))
+            return
+        }
+
+        res.end(JSON.stringify({
+            recommendedSongs: allSongs,
+            error: ""
+        }))
+    }
+)
 
 // API endpoint for getting recommended artists
 // The spotify "Related Artists" API is deprecated and no longer works.
@@ -232,7 +354,7 @@ router.get("/artist_recommendation", [
         let artistAlbumsRawData = await getArtistsAlbums(id)
         const foundContributingArtistIDs = new Set()
         const totalContributingArtists = []
-        for (let i = 0; i<maxApiRequests; i++) {
+        for (let i = 0; i<MAX_API_REQUESTS; i++) {
             // Send error to client
             if(artistAlbumsRawData instanceof Error) {
                 res.status(500).json({ error: `Internal Server Error: ${artistAlbumsRawData}`})
@@ -264,7 +386,7 @@ router.get("/artist_recommendation", [
             
             // If there are more albums and we have found less then 10 artists, continue search,
             // if not, break.
-            if(artistAlbumsRawData.next && totalContributingArtists.length<=10){
+            if(artistAlbumsRawData.next && totalContributingArtists.length<=MAX_ARTISTS){
                 artistAlbumsRawData = await getNextAlbum(artistAlbumsRawData.next)
             } else{
                 break;
