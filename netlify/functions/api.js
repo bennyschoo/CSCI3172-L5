@@ -72,6 +72,8 @@ function convertSpotifyArtistResults(results){
     return artists
 }
 
+// Get the contributing artists from a list of albums given the current artist ID,
+// and a set 
 async function getContributingArtistsID(artistAlbums, currArtistID, artistsSet){
     const artists=[]
     for(let album of artistAlbums){
@@ -96,6 +98,7 @@ async function getContributingArtistsID(artistAlbums, currArtistID, artistsSet){
     return artists;
 }
 
+// get the detailed artist data from a list of artist ids
 async function getArtistsDataFromIDList(artistIDs){
     const artistsData = []
     for(let artistID of artistIDs){
@@ -149,30 +152,35 @@ async function getRandomSongsFromArtistAlbumsList(albums){
     return songs
 }
 
+// Get artists albums from artist id
 async function getArtistsAlbums(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}/albums?limit=10`
     const result = await makeSpotifyRequest(reqUrl)
     return result
 }
 
+// search artists by name
 async function getArtists(name){
     const reqUrl = `https://api.spotify.com/v1/search?q=artist:${name}&type=artist&limit=10`
     const result = await makeSpotifyRequest(reqUrl)
     return result
 }
 
+// get album data by id 
 async function getAlbum(id){
     const reqUrl = `https://api.spotify.com/v1/albums/${id}`
     const result = await makeSpotifyRequest(reqUrl)
     return result
 }
 
+// get artist data by id
 async function getArtist(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}`
     const result = await makeSpotifyRequest(reqUrl)
     return result
 }
 
+// get next album from url
 async function getNextAlbum(url){
     const result = await makeSpotifyRequest(url)
     return result;
