@@ -11,6 +11,7 @@ const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
 const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+const maxApiRequests = 10
 
 // Get spotify access token
 async function getAccessTokenHeader(clientID, secret) {
@@ -49,11 +50,15 @@ async function makeSpotifyRequest(reqUrl){
     }
 }
 
-function convertSpotifyArtistSearchResults(results){
+function convertSpotifyArtistResults(results){
     const artists = []
-    for(let result of results.artists.items){
+    for(let result of results){
         let artist = {}
-        artist.spotifyURL = result.external_urls.spotify
+        try{
+            artist.spotifyURL = result.external_urls.spotify
+        } catch{
+            artist.spotifyURL = null
+        }
         artist.id = result.id
         try{
             artist.imageURL = result.images[0].url
@@ -66,19 +71,31 @@ function convertSpotifyArtistSearchResults(results){
     return artists
 }
 
-function getContributingArtistsID(tracks, currArtistID){
+async function getContributingArtistsID(artistAlbums, currArtistID, artistsSet){
     const artists=[]
-    for(let track of tracks){
-        for(let artist of track.artists){
-            if(artist.id != currArtistID){
-                artists.push(artist.id);
+    for(let album of artistAlbums){
+            const albumID = album.id
+            const albumData = await getAlbum(albumID)
+            if(albumData instanceof Error) {
+                res.status(500).json({ error: `Internal Server Error: ${albumData}`})
+            }
+            if(!albumData){
+                res.status(500).json({ error: "Internal Server Error: Error in album retreival logic"})
+                return
+            }
+            for(let track of albumData.tracks.items){
+                for(let artist of track.artists){
+                    if(artist.id != currArtistID && !artistsSet.has(artist.id)){
+                        artists.push(artist.id);
+                        artistsSet.add(artist.id)
+                    }
+                }
             }
         }
-    }
     return artists;
 }
 
-async function getArtistsData(artistIDs){
+async function getArtistsDataFromIDList(artistIDs){
     const artistsData = []
     for(let artistID of artistIDs){
         const artistdata = await getArtist(artistID)
@@ -93,7 +110,7 @@ async function getArtistsData(artistIDs){
 async function getArtistsAlbums(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}/albums?limit=10`
     const result = await makeSpotifyRequest(reqUrl)
-    return result.items
+    return result
 }
 
 async function getArtists(name){
@@ -112,6 +129,11 @@ async function getArtist(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}`
     const result = await makeSpotifyRequest(reqUrl)
     return result
+}
+
+async function getNextAlbum(url){
+    const result = await makeSpotifyRequest(url)
+    return result;
 }
 
 // API endpoint for searching up artists
@@ -149,7 +171,7 @@ router.get("/search_artist", [
         }
 
         try{
-            const convertedResults = convertSpotifyArtistSearchResults(artists)
+            const convertedResults = convertSpotifyArtistResults(artists.artists.items)
             res.writeHead(200, {
                 "Content-Type":"text/json",
                 "Cache-Control": "no-cache"
@@ -162,6 +184,7 @@ router.get("/search_artist", [
     }
 )
 
+// API endpoint for getting recommended songs
 router.get("/song_recommendation", async (req, res) => {
     const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
     res.writeHead(200, {
@@ -172,6 +195,8 @@ router.get("/song_recommendation", async (req, res) => {
 })
 
 // API endpoint for getting recommended artists
+// The spotify "Related Artists" API is deprecated and no longer works.
+// Because of this, I have to get artists that are featured on one  of their albums to recommend. 
 router.get("/artist_recommendation", [
     query("id").trim().escape(),
 ],  async (req, res) => {
@@ -181,6 +206,11 @@ router.get("/artist_recommendation", [
             res.status(400).json({ errors: errors.array() });
             return
         }
+
+        res.writeHead(200, {
+            "Content-Type":"text/json",
+            "Cache-Control": "no-cache"
+        })
 
         const id = req.query.id;
          
@@ -196,63 +226,64 @@ router.get("/artist_recommendation", [
             return
         }
         
-        const albums = await getArtistsAlbums(id);
+        // Each album response from spotify contains a url to get the next list of albums
+        // This loop is used to continue searching the albums until atleast 10 artists are found.
+        // i<10 so that I do not make too many requests to the spotify API and get blocked.
+        let artistAlbumsRawData = await getArtistsAlbums(id)
+        const foundContributingArtistIDs = new Set()
+        const totalContributingArtists = []
+        for (let i = 0; i<maxApiRequests; i++) {
+            // Send error to client
+            if(artistAlbumsRawData instanceof Error) {
+                res.status(500).json({ error: `Internal Server Error: ${artistAlbumsRawData}`})
+                return
+            }
+
+            const artistAlbums = artistAlbumsRawData.items;
+            
+            // Send OK response with empty list
+            if(!artistAlbums || artistAlbums.length==0){
+                res.end(JSON.stringify({
+                    recommendedArtists: artistAlbums,
+                    error: "Artist has no album data"
+                }))
+                return
+            }
+
+            // Get contributing artists from all albums in list
+            const contributingArtistIDs = await getContributingArtistsID(artistAlbums, id, foundContributingArtistIDs)
+
+            const contributingArtists = await getArtistsDataFromIDList(contributingArtistIDs.slice(0,11))
+
+            if(contributingArtists instanceof Error) {
+                res.status(500).json({ error: `Internal Server Error: ${contributingArtists}`})
+                return
+            }
+
+            totalContributingArtists.push(...convertSpotifyArtistResults(contributingArtists))
+            
+            // If there are more albums and we have found less then 10 artists, continue search,
+            // if not, break.
+            if(artistAlbumsRawData.next && totalContributingArtists.length<=10){
+                artistAlbumsRawData = await getNextAlbum(artistAlbumsRawData.next)
+            } else{
+                break;
+            }
+        }
         
-        if(albums instanceof Error) {
-            res.status(500).json({ error: `Internal Server Error: ${albums}`})
-        }
-
-        if(!albums){
-            res.writeHead(200, {
-                "Content-Type":"text/json",
-                "Cache-Control": "no-cache"
-             })
+        // If no other artists found on any albums 
+        if(!totalContributingArtists || totalContributingArtists.length==0){
             res.end(JSON.stringify({
-                recommendedArtists: albums,
-                error: "Artist has no album data"
-            }))
-            return
-        }
-
-        const randIndex = Math.trunc(Math.random() * (albums.length))
-        const randAlbumID = albums[randIndex].id
-        const randAlbum = await getAlbum(randAlbumID)
-
-        if(randAlbum instanceof Error) {
-            res.status(500).json({ error: `Internal Server Error: ${randAlbum}`})
-        }
-
-        if(!randAlbum){
-            res.status(500).json({ error: "Internal Server Error: Error in album retreival logic"})
-            return
-        }
-
-        const contributingArtistIDs = getContributingArtistsID(randAlbum.tracks.items, id)
-
-        if(!contributingArtistIDs){
-            res.writeHead(200, {
-                "Content-Type":"text/json",
-                "Cache-Control": "no-cache"
-             })
-            res.end(JSON.stringify({
-                recommendedArtists: contributingArtistIDs,
+                recommendedArtists: totalContributingArtists,
                 error: "No related artists"
             }))
             return
         }
 
-        // need to modify getArtistsData function to filter for only useful data
-        const contributingArtists = await getArtistsData(contributingArtistIDs)
-
-        if(contributingArtists instanceof Error) {
-            res.status(500).json({ error: `Internal Server Error: ${contributingArtists}`})
-        }
-
-        res.writeHead(200, {
-            "Content-Type":"text/json",
-            "Cache-Control": "no-cache"
-        })
-        res.end(JSON.stringify(contributingArtists))
+        res.end(JSON.stringify({
+            recommendedArtists: totalContributingArtists,
+            error: ""
+        }))
     }
 )
 
