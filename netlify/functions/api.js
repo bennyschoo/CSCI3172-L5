@@ -248,11 +248,6 @@ router.get("/song_recommendation", [
             return
         }
 
-        res.writeHead(200, {
-            "Content-Type":"text/json",
-            "Cache-Control": "no-cache"
-        })
-
         const id = req.query.id;
 
         // return error if there was an issue with the url params
@@ -283,6 +278,10 @@ router.get("/song_recommendation", [
             
             // Send OK response with empty list
             if(!artistAlbums || artistAlbums.length==0){
+                res.writeHead(200, {
+                    "Content-Type":"text/json",
+                    "Cache-Control": "no-cache"
+                })
                 res.end(JSON.stringify({
                     recommendedSongs: artistAlbums,
                     error: "Artist has no album data"
@@ -308,6 +307,12 @@ router.get("/song_recommendation", [
                 break;
             }
         }
+
+        
+        res.writeHead(200, {
+            "Content-Type":"text/json",
+            "Cache-Control": "no-cache"
+        })
         
         // If no other artists found on any albums 
         if(!allSongs || allSongs.length==0){
