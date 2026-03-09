@@ -34,7 +34,14 @@ async function getAccessTokenHeader(clientID, secret) {
     }
 }
 
+const MAX_TOTAL_REQUESTS = 35
+let currTotalReqs = 0
 async function makeSpotifyRequest(reqUrl){
+    if(currTotalReqs >= MAX_TOTAL_REQUESTS){
+        throw new Error(MAX_REQUESTS_MESSAGE)
+    }
+    currTotalReqs++
+    console.log(currTotalReqs)
     const reqHeaders = {
         "Authorization": accessHeader
     }
@@ -160,7 +167,7 @@ async function getArtists(name){
 // get album data by id
 // Use variables to limit requests so 
 // we don't get blocked by server 
-const MAX_ALBUM_REQS = 30
+const MAX_ALBUM_REQS = 20
 let currAlbumReqs = 0
 async function getAlbum(id){
     if(currAlbumReqs >= MAX_ALBUM_REQS){
@@ -340,7 +347,7 @@ router.get("/song_recommendation", [
         if(!allSongs || allSongs.length==0){
             res.end(JSON.stringify({
                 recommendedSongs: allSongs,
-                error: "No related artists"
+                error: "No related songs"
             }))
             return
         }
