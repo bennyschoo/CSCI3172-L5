@@ -41,7 +41,7 @@ async function makeSpotifyRequest(reqUrl){
         throw new Error(MAX_REQUESTS_MESSAGE)
     }
     currTotalReqs++
-    console.log(currTotalReqs)
+    
     const reqHeaders = {
         "Authorization": accessHeader
     }
