@@ -12,10 +12,11 @@ const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
 const MAX_REQUESTS_MESSAGE = "max requests has been reached"
 
-console.log("CLient ID" + spotifyClientId)
-console.log("Secret" + spotifySecret)
+
 // Get spotify access token
 async function getAccessTokenHeader(clientID, secret) {
+    console.log("CLient ID" + spotifyClientId)
+    console.log("Secret" + spotifySecret)
     try{
         const res = await fetch("https://accounts.spotify.com/api/token", {
             method: "POST",
