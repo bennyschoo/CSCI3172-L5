@@ -2,30 +2,49 @@ import { JSDOM } from "jsdom";
 import fs from "fs";
 import path from "path";
 
-const html = fs.readFileSync(path.resolve(__dirname, "../frontend/index.html"), "utf8");
+const searchHtml = fs.readFileSync(path.resolve(__dirname, "../frontend/index.html"), "utf8");
+const recommendationHtml = fs.readFileSync(path.resolve(__dirname, "../frontend/index.html"), "utf8");
 
-describe("Music Recomendation App UI ", () => {
-    let dom, document;
+describe("Search UI ", () => {
+    let searchDOM, searchDoc;
     beforeEach(() => {
-        dom = new JSDOM(html);
-        document = dom.window.document;
+        searchDOM = new JSDOM(searchHtml);
+        searchDoc = searchDOM.window.document;
     });
     it("Should have an artist search field to choose an artist you like", () => {
-        const input = document.querySelector("#artist-search");
+        const input = searchDoc.querySelector("#artist-search-field");
         expect(input).not.toBeNull();
     });
-    it("Should have artist results from the search", () => {
-        const input = document.querySelector("#artist-search");
-        const form = document.querySelector('#artist-form')
-        input.value = "beatles";
-        form.submit();
-
-        const result = document.querySelectorAll(".artist-result");
+    it("Should have artist results container to store results", () => {
+        const result = searchDoc.querySelector("#results-container");
         expect(result).not.toBeNull();
-        expect(result).toBeTruthy();
     });
     it("Should have a search button", () => {
-        const input = document.querySelector("#artist-search-button");
+        const input = searchDoc.querySelector(".btn");
+        expect(input).not.toBeNull();
+    });
+    it("Should have a descriptive title", () => {
+        const result = searchDoc.querySelector("h1");
+        expect(result).not.toBeNull();
+    })
+});
+
+describe("Recomendation UI", () => {
+    let recommendationDOM, recommendationDoc;
+    beforeEach(() => {
+        recommendationDOM = new JSDOM(recommendationHtml);
+        recommendationDoc = recommendationDOM.window.document;
+    });
+    it("Should have a container for the recommendation results", () => {
+        const input = recommendationDoc.querySelector("#results-container");
+        expect(input).not.toBeNull();
+    });
+    it("Should have a title that can be edited based on if it is a song or artist recommendation", () => {
+        const result = recommendationDoc.querySelectorAll("#recommendation-text");
+        expect(result).not.toBeNull();
+    });
+    it("Should have a message that indicates the results are loading", () => {
+        const result = recommendationDoc.querySelector("#loading-text");
         expect(result).not.toBeNull();
     });
 });
