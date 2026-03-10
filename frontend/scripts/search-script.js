@@ -17,8 +17,8 @@ async function getSearchResults(searchTerm){
 function displayError(e, message="There was an error with the request."){
     console.log(e)
     resultsContainer.innerHTML = "";
-    const messageElement = document.createElement("h5");
-    messageElement.className = "text-center";
+    const messageElement = document.createElement("p");
+    messageElement.className = "text-center large-font";
     messageElement.textContent = message
     resultsContainer.appendChild(messageElement);
 }
@@ -42,7 +42,8 @@ function displayResults(results){
         }
         artistImage.className = "result-image ms-3 me-3"
 
-        const artistName = document.createElement("h2");
+        const artistName = document.createElement("p");
+        artistName.className = "large-font"
         artistName.textContent = result.name;
 
         const buttonsSectionContainer = document.createElement("div");

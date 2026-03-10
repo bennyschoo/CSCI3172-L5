@@ -21,8 +21,8 @@ function setPageTitle(text){
 function displayError(e, message="There was an error with the request."){
     console.log(e)
     resultsContainer.innerHTML = "";
-    const messageElement = document.createElement("h5");
-    messageElement.className = "text-center";
+    const messageElement = document.createElement("p");
+    messageElement.className = "text-center large-font";
     messageElement.textContent = message
     resultsContainer.appendChild(messageElement);
 }
@@ -43,7 +43,8 @@ function displayResults(results){
         }
         image.className = "result-image ms-3 me-3"
 
-        const name = document.createElement("h2");
+        const name = document.createElement("p");
+        name.className = "large-font"
         name.textContent = result.name;
 
         resultsContainer.appendChild(resultContainer);

@@ -5,7 +5,7 @@ describe("Search Api", () => {
     it("should return artist data for an artist search", async () => {
         const res = await request(handler).get("/api/search_artist?name=beatles");
         expect(res.statusCode).toBe(200);
-        expect(res.body[0]).toHaveProperty("name");
+        expect(res.body.searchResults[0]).toHaveProperty("name");
     });
     it("should return an error for missing name", async () => {
         const res = await request(handler).get("/api/search_artist");
@@ -19,7 +19,7 @@ describe("Recommend Artists API", () => {
         const id = "3WrFJ7ztbogyGnTHbHJFl2"
         const res = await request(handler).get(`/api/artist_recommendation?id=${id}`);
         expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty("recommendedArtists");
+        expect(res.body).toHaveProperty("recommendations");
     });
     it("should return an error for missing id", async () => {
         const res = await request(handler).get("/api/artist_recommendation");
@@ -33,7 +33,7 @@ describe("Recommend Songs API", () => {
         const id = "3WrFJ7ztbogyGnTHbHJFl2"
         const res = await request(handler).get(`/api/song_recommendation?id=${id}`);
         expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty("recommendedSongs");
+        expect(res.body).toHaveProperty("recommendations");
     });
     it("should return an error for missing id", async () => {
         const res = await request(handler).get("/api/song_recommendation");

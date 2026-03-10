@@ -2,9 +2,17 @@
 
 * *Date Created*: 06 March 2026
 * *Last Modification Date*: 10 March 2026
-* *Lab Netlify URL*: <https://web.cs.dal.ca/~schoonhove/csci3172/labs/lab5/>
+* *Lab Netlify URL*: <https://csci3172-lab5-b00954933.netlify.app/>
 * *Lab Gitlab URL*: <https://git.cs.dal.ca/schoonhove/csci3172/-/tree/main/labs/Lab5>
 
+## Description
+
+### Note
+Various parts of the Spotify API are deprecated and no longer work. This includes both the song recommendation API and related artists API. I've checked with professor Mosquera and verified that it is okay that I use an alternate way of making recommendations due to this issue. For recommending artists, what I've done instead is look through the chosen artist's albums and songs and check for contributing artists. For recommending songs, I've simply just gone through each one of the chosen artist's albums and suggest a few random songs from each album. My implementation still shows great usage and understanding of the API.
+
+### Testing
+ In the API tests, I test each API endpoint by making valid test requests to it and verifying that the response is what is expected. For the UI tests, I used test driven development, brainstorming what I would need for the App's UI and creating tests for each feature. After making the tests, I then created the HTML based each test case.
+ All components worked as expected after extensive coding.
 
 ## Authors
 
