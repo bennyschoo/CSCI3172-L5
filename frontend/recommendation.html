@@ -5,9 +5,9 @@
         <title>Spotify Music Discovery</title>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
         <link rel="icon" type="image/x-icon" href="./img/cat.png">
+        <link rel='stylesheet' type='text/css' media='screen' href='/frontend/styles/styles.css'>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-        <link rel="stylesheet" href="./styles/styles.css"/>
-    </head> 
+    </head>
     
     <body class="bg-secondary text-white">
         <header class="d-flex flex-wrap justify-content-between container border-bottom">
@@ -21,29 +21,14 @@
         </header>
 
         <main class="container">
-            <h1 class="m-3 text-center">Search for Artists</h1>
-
-            <form id="artist-search-form" class="mb-2 m-auto d-flex rounded">
-                <input id="artist-search-field" class="form-control m-1" type="text" placeholder="Search For Artists Here!"/>
-                <button type="submit" class="btn btn-success m-2">Search</button>
-            </form>
+            <h1 id="recommendation-text" class="m-3 text-center">Recommendations</h1>
 
             <div id="results-container" class="my-4">
-                <h5 class="text-center">Results will show here!</h5>
-                <!-- <div class="result bg-light rounded d-flex justify-content-between text-dark">
-                    <a href="" class="link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover d-flex align-items-center">
-                        <img class="result-image ms-3 me-2" src="./img/cat.png">
-                        <h2>asdasd</h2>
-                    </a>
-                
-                    <div class="d-flex flex-column justify-content-center m-2">
-                        <p class="text-center text-nowrap p-0 m-0">Get Recommendations</p>
-                        <div class="d-flex flex-wrap align-items-center justify-content-center">
-                            <a><button class="btn btn-success m-2">Artists</button></a>
-                            <a><button class="btn btn-success me-2">Songs</button></a>
-                        </div>
-                    </div>
-                </div> -->
+                <h5 class="text-center">Please Wait. Results are loading...</h5>
+                <!-- <a href="" class="result bg-light rounded link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover d-flex align-items-center">
+                    <img class="result-image ms-3 me-3" src="./img/cat.png">
+                    <h2>asdasd</h2>
+                </a> -->
             </div>
         </main>
 
@@ -55,9 +40,9 @@
                     <img class="cat-logo" src="./img/cat.png" alt="cat logo image">
                 </a> 
                 <ul class="nav col-md-4 justify-content-end"> 
-                    <li class="nav-item"><a href="#" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">Home</a></li> 
-                    <li class="nav-item"><a href="#" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">Sign up</a></li> 
-                    <li class="nav-item"><a href="#" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">Login</a></li> 
+                    <li class="nav-item"><a href="./index.html" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">Home</a></li> 
+                    <li class="nav-item"><a href="./index.html" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">Sign up</a></li> 
+                    <li class="nav-item"><a href="" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">Login</a></li> 
                     <li class="nav-item"><a href="#" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">FAQs</a></li> 
                     <li class="nav-item"><a href="#" class="px-2 link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">About</a></li> 
                 </ul> 
@@ -65,5 +50,5 @@
         </div>
     </body>
 
-    <script src="./scripts/search-script.js"></script>
+    <script src="./scripts/recommendation-script.js"></script>
 </html>

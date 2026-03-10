@@ -221,7 +221,15 @@ router.get("/search_artist", [
         
         // return error if there was an issue with the url params
         if(!req.query.artistName){
-            res.status(400).json({ error: "Missing 'artistName' url param"})
+            res.writeHead(200, {
+                "Content-Type":"text/json",
+                "Cache-Control": "no-cache",
+                "Access-Control-Allow-Origin": "*"
+            })
+            res.end(JSON.stringify({
+                searchResults: [],
+                error: "No Artist Results"
+            }))
             return
         }
 
@@ -246,9 +254,20 @@ router.get("/search_artist", [
             const convertedResults = convertSpotifyArtistResults(artists.artists.items)
             res.writeHead(200, {
                 "Content-Type":"text/json",
-                "Cache-Control": "no-cache"
+                "Cache-Control": "no-cache",
+                "Access-Control-Allow-Origin": "*"
             })
-            res.end(JSON.stringify(convertedResults))
+            if(convertedResults.length == 0){
+                res.end(JSON.stringify({
+                    searchResults: convertedResults,
+                    error: "No Artist Results"
+                }))
+                return
+            }
+            res.end(JSON.stringify({
+                searchResults: convertedResults,
+                error: ""
+            }))
         } catch (e){
             res.status(500).json({ error: `Internal Server Error: ${e}`})
             return
@@ -305,7 +324,7 @@ router.get("/song_recommendation", [
                         "Cache-Control": "no-cache"
                     })
                     res.end(JSON.stringify({
-                        recommendedSongs: artistAlbums,
+                        recommendations: artistAlbums,
                         error: "Artist has no album data"
                     }))
                     return
@@ -340,20 +359,21 @@ router.get("/song_recommendation", [
         
         res.writeHead(200, {
             "Content-Type":"text/json",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*"
         })
         
         // If no other artists found on any albums 
         if(!allSongs || allSongs.length==0){
             res.end(JSON.stringify({
-                recommendedSongs: allSongs,
+                recommendations: allSongs,
                 error: "No related songs"
             }))
             return
         }
 
         res.end(JSON.stringify({
-            recommendedSongs: allSongs,
+            recommendations: allSongs,
             error: ""
         }))
     }
@@ -409,7 +429,7 @@ router.get("/artist_recommendation", [
                         "Cache-Control": "no-cache"
                     })
                     res.end(JSON.stringify({
-                        recommendedArtists: artistAlbums,
+                        recommendations: artistAlbums,
                         error: "Artist has no album data"
                     }))
                     return
@@ -450,20 +470,21 @@ router.get("/artist_recommendation", [
         
         res.writeHead(200, {
             "Content-Type":"text/json",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*"
         })
 
         // If no other artists found on any albums 
         if(!totalContributingArtists || totalContributingArtists.length==0){
             res.end(JSON.stringify({
-                recommendedArtists: totalContributingArtists,
+                recommendations: totalContributingArtists,
                 error: "No related artists"
             }))
             return
         }
 
         res.end(JSON.stringify({
-            recommendedArtists: totalContributingArtists,
+            recommendations: totalContributingArtists,
             error: ""
         }))
     }

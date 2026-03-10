@@ -1,0 +1,25 @@
+.cat-logo{
+    max-width: 80px;
+    border-radius: 20px;
+    margin: 10px;
+}
+
+.large-font{
+    font-size: 1.4rem;
+}
+
+.result-image{
+    max-width: 75px;
+    height: 75px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+#artist-search-form{
+    width: 340px;
+}
+
+.result{
+    height: 100px;
+}
+
