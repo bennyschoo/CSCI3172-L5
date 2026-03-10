@@ -10,8 +10,8 @@ const api = express();
 const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
-const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
 const MAX_REQUESTS_MESSAGE = "max requests has been reached"
+let accessHeader
 
 // Get spotify access token
 async function getAccessTokenHeader(clientID, secret) {
@@ -251,6 +251,8 @@ router.get("/search_artist", [
             return
         }
         
+        accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+
         // return error if there was an issue with the url params
         if(!req.query.artistName){
             res.writeHead(200, {

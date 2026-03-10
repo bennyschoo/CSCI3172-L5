@@ -2,10 +2,10 @@
   "name": "lab5",
   "version": "1.0.0",
   "description": "Lab5 assingment",
-  "main": "netlify/functions/api.js",
+  "main": "netlify/functions/api.mjs",
   "type": "module",
   "scripts": {
-    "start": "node netlify/functions/api.js",
+    "start": "node netlify/functions/api.mjs",
     "test": "jest"
   },
   "repository": {
