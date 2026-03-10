@@ -1,5 +1,5 @@
 import request from "supertest";
-import { handler } from "../netlify/functions/api.js";
+import { handler } from "../netlify/functions/api.mjs";
 
 describe("Search Api", () => {
     it("should return artist data for an artist search", async () => {
