@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Lab5 assingment",
   "main": "netlify/functions/api.js",
+  "type": "module",
   "scripts": {
     "start": "node netlify/functions/api.js",
     "test": "jest"

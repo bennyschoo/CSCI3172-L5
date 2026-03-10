@@ -1,8 +1,8 @@
-const express = require("express");
-const serverless = require("serverless-http");
-const fetch = require("node-fetch");
-const dotenv = require("dotenv");
-const {query, validationResult} = require("express-validator");
+import express from "express";
+import serverless from "serverless-http";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+import {query, validationResult} from "express-validator";
 
 dotenv.config();
 
@@ -10,13 +10,11 @@ const api = express();
 const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
+const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
 const MAX_REQUESTS_MESSAGE = "max requests has been reached"
-
 
 // Get spotify access token
 async function getAccessTokenHeader(clientID, secret) {
-    console.log("CLient ID" + spotifyClientId)
-    console.log("Secret" + spotifySecret)
     try{
         const res = await fetch("https://accounts.spotify.com/api/token", {
             method: "POST",
@@ -252,8 +250,6 @@ router.get("/search_artist", [
             res.status(400).json({ errors: errors.array() });
             return
         }
-
-        const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
         
         // return error if there was an issue with the url params
         if(!req.query.artistName){
@@ -327,7 +323,6 @@ router.get("/song_recommendation", [
         }
 
         const id = req.query.id;
-        const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
 
         // return error if there was an issue with the url params
         if(!id){
@@ -433,8 +428,7 @@ router.get("/artist_recommendation", [
         }
 
         const id = req.query.id;
-        const accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
-
+         
         // return error if there was an issue with the url params
         if(!id){
             res.status(400).json({ error: "Missing 'id' url param"})
@@ -534,5 +528,4 @@ router.get("/artist_recommendation", [
 
 
 api.use("/api", router);
-const handler = serverless(api);
-module.exports = { handler }
+export const handler = serverless(api);
