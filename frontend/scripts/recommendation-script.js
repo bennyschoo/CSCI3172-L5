@@ -32,7 +32,7 @@ function displayResults(results){
     for(let result of results){
         const resultContainer = document.createElement("a");
         resultContainer.href = result.spotifyURL
-        resultContainer.className = "result bg-light rounded link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover d-flex align-items-center"
+        resultContainer.className = "result bg-light rounded link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover d-flex align-items-center my-3"
         
         const image = document.createElement("img");
         if(result.imageURL){
@@ -52,35 +52,54 @@ function displayResults(results){
     }
 }
 
-const qs = window.location.search;
-const urlParams = new URLSearchParams(qs);
-const id = urlParams.get("id")
-const type= urlParams.get("type")
-const artistName= urlParams.get("name")
 
-if(!id){
-    displayError("id missing from url");
-    
-}
-if(!type){
-    displayError("type missing from url")
-    
-}
-if(!artistName){
-    displayError("name missing from url")
-}
+async function main(){
+    const qs = window.location.search;
+    const urlParams = new URLSearchParams(qs);
+    const id = urlParams.get("id")
+    const type= urlParams.get("type")
+    const artistName= urlParams.get("name")
 
-if(id && type && artistName){
-    let results;
-    switch(type){
-        case "song":
-            setPageTitle(`Song Recommendations for ${artistName}`)
-            results = await getResults(`http://localhost/api/song_recommendation?id=${id}`)
-            break;
-        case "artist":
-            setPageTitle(`Artist Recommendations for ${artistName}`)
-            results = await getResults(`http://localhost/api/artist_recommendation?id=${id}`)
-            break;
+    if(!id){
+        displayError("id missing from url");
+        
     }
-    displayResults(results);
+    if(!type){
+        displayError("type missing from url")
+        
+    }
+    if(!artistName){
+        displayError("name missing from url")
+    }
+
+    if(id && type && artistName){
+        let results;
+        switch(type){
+            case "song":
+                setPageTitle(`Song Recommendations for ${artistName}`)
+                results = await getResults(`../api/song_recommendation?id=${id}`)
+                break;
+            case "artist":
+                setPageTitle(`Artist Recommendations for ${artistName}`)
+                results = await getResults(`../api/artist_recommendation?id=${id}`)
+                break;
+        }
+        
+        if(!results || results instanceof Error){
+            displayError(results);
+            return;
+        }
+        if(results.error == null){
+            displayError("results.error is null")
+            return
+        }
+        if(results.error!=""){
+            displayError(results.error, results.error)
+            return
+        }
+
+        displayResults(results.recommendations);
+    }
 }
+
+main()

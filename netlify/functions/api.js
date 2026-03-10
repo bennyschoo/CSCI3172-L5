@@ -153,14 +153,24 @@ async function getRandomSongsFromArtistAlbumsList(albums){
 // Get artists albums from artist id
 async function getArtistsAlbums(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}/albums?limit=10`
-    const result = await makeSpotifyRequest(reqUrl)
+    let result;
+    try{
+        result = await makeSpotifyRequest(reqUrl)
+    } catch(e){
+        throw e
+    }
     return result
 }
 
 // search artists by name
 async function getArtists(name){
     const reqUrl = `https://api.spotify.com/v1/search?q=artist:${name}&type=artist&limit=10`
-    const result = await makeSpotifyRequest(reqUrl)
+    let result;
+    try{
+        result = await makeSpotifyRequest(reqUrl)
+    } catch(e){
+        throw e
+    }
     return result
 }
 
@@ -175,14 +185,19 @@ async function getAlbum(id){
     }
     currAlbumReqs++
     const reqUrl = `https://api.spotify.com/v1/albums/${id}`
-    const result = await makeSpotifyRequest(reqUrl)
+    let result;
+    try{
+        result = await makeSpotifyRequest(reqUrl)
+    } catch(e){
+        throw e
+    }
     return result
 }
 
 // get artist data by id
 // Use variables to limit requests so 
 // we don't get blocked by server
-const MAX_ARTIST_REQS = 20
+const MAX_ARTIST_REQS = 15
 let currArtistReqs = 0
 async function getArtist(id){
     if(currArtistReqs >= MAX_ARTIST_REQS){
@@ -190,22 +205,39 @@ async function getArtist(id){
     }
     currArtistReqs++
     const reqUrl = `https://api.spotify.com/v1/artists/${id}`
-    const result = await makeSpotifyRequest(reqUrl)
+    let result;
+    try{
+        result = await makeSpotifyRequest(reqUrl)
+    } catch(e){
+        throw e
+    }
     return result
 }
 
 // get next album from url
 // Use variables to limit requests so 
 // we don't get blocked by server
-const MAX_NEXT_ALBUM_REQS = 10
+const MAX_NEXT_ALBUM_REQS = 2
 let currNextAlbumReqs = 0
 async function getNextAlbum(url){
     if(currNextAlbumReqs >= MAX_NEXT_ALBUM_REQS){
         throw new Error(MAX_REQUESTS_MESSAGE)
     }
     currNextAlbumReqs++
-    const result = await makeSpotifyRequest(url)
+    let result;
+    try{
+        result = await makeSpotifyRequest(url)
+    } catch(e){
+        throw e
+    }
     return result;
+}
+
+function resetRequestCounters(){
+    currAlbumReqs = 0
+    currArtistReqs = 0
+    currTotalReqs = 0
+    currNextAlbumReqs = 0
 }
 
 // API endpoint for searching up artists
@@ -238,6 +270,8 @@ router.get("/search_artist", [
             res.status(500).json({ error: "Internal Server Error: missing access token"})
             return
         }
+
+        resetRequestCounters()
 
         const artists = await getArtists(req.query.artistName)
         
@@ -307,6 +341,7 @@ router.get("/song_recommendation", [
         // i<10 so that I do not make too many requests to the spotify API and get blocked.
         let artistAlbumsRawData = await getArtistsAlbums(id)
         const allSongs = []
+        resetRequestCounters()
         while(true) {
             try{
                 // Send error to client
@@ -412,6 +447,7 @@ router.get("/artist_recommendation", [
         let artistAlbumsRawData = await getArtistsAlbums(id)
         const foundContributingArtistIDs = new Set()
         const totalContributingArtists = []
+        resetRequestCounters()
         while(true) {
             try{
                 // Send error to client
