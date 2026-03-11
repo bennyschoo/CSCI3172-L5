@@ -41,7 +41,7 @@ function displayResults(results){
         else{
             image.src = "./img/default-user.png"
         }
-        image.className = "result-image ms-3 me-3"
+        image.className = "result-image m-3"
 
         const name = document.createElement("p");
         name.className = "large-font"
