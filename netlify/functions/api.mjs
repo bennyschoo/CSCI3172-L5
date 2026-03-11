@@ -35,7 +35,7 @@ async function getAccessTokenHeader(clientID, secret) {
     }
 }
 
-const MAX_TOTAL_REQUESTS = 35
+const MAX_TOTAL_REQUESTS = 25
 let currTotalReqs = 0
 async function makeSpotifyRequest(reqUrl){
     if(currTotalReqs >= MAX_TOTAL_REQUESTS){
@@ -164,7 +164,7 @@ async function getArtists(name){
 // get album data by id
 // Use variables to limit requests so 
 // we don't get blocked by server 
-const MAX_ALBUM_REQS = 20
+const MAX_ALBUM_REQS = 13
 let currAlbumReqs = 0
 async function getAlbum(id){
     if(currAlbumReqs >= MAX_ALBUM_REQS){
