@@ -203,7 +203,6 @@ async function getNextAlbum(reqUrl){
         throw new Error(MAX_REQUESTS_MESSAGE)
     }
     currNextAlbumReqs++
-    const reqUrl = `https://api.spotify.com/v1/artists/${id}`
     const result = await makeSpotifyRequest(reqUrl)
 
     return result;
