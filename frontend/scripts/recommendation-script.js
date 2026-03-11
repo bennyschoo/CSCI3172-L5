@@ -53,6 +53,14 @@ function displayResults(results){
     }
 }
 
+document.getElementById("back-button").addEventListener("click", (e)=>{
+    e.preventDefault;
+    if(history.length<=2){
+        window.location.href = "./index.html"
+    } else {
+        history.back()
+    }
+})
 
 async function main(){
     const qs = window.location.search;

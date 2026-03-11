@@ -27,7 +27,7 @@ function displayResults(results){
     resultsContainer.innerHTML = ""
     for(let result of results){
         const resultContainer = document.createElement("div");
-        resultContainer.className = "result bg-light rounded d-flex justify-content-between text-dark m-4"
+        resultContainer.className = "result bg-light rounded d-flex flex-wrap justify-content-between text-dark m-4"
 
         const artistDetailsContainer = document.createElement("a");
         artistDetailsContainer.href = result.spotifyURL
@@ -40,14 +40,14 @@ function displayResults(results){
         else{
             artistImage.src = "./img/default-user.png"
         }
-        artistImage.className = "result-image ms-3 me-3"
+        artistImage.className = "result-image m-3"
 
         const artistName = document.createElement("p");
         artistName.className = "large-font"
         artistName.textContent = result.name;
 
         const buttonsSectionContainer = document.createElement("div");
-        buttonsSectionContainer.className = "d-flex flex-column justify-content-center m-2";
+        buttonsSectionContainer.className = "d-flex flex-column justify-content-center m-auto";
 
         const buttonsTitle = document.createElement("p");
         buttonsTitle.className = "text-center text-nowrap p-0 m-0";
