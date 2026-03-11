@@ -497,4 +497,3 @@ router.get("/artist_recommendation", [
 
 api.use("/api", router);
 export const handler = serverless(api);
-api.listen(80, "localhost")
