@@ -198,12 +198,14 @@ async function getArtist(id){
 // we don't get blocked by server
 const MAX_NEXT_ALBUM_REQS = 2
 let currNextAlbumReqs = 0
-async function getNextAlbum(url){
+async function getNextAlbum(reqUrl){
     if(currNextAlbumReqs >= MAX_NEXT_ALBUM_REQS){
         throw new Error(MAX_REQUESTS_MESSAGE)
     }
     currNextAlbumReqs++
-   
+    const reqUrl = `https://api.spotify.com/v1/artists/${id}`
+    const result = await makeSpotifyRequest(reqUrl)
+
     return result;
 }
 
