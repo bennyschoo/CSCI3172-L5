@@ -47,7 +47,7 @@ function displayResults(results){
         artistName.textContent = result.name;
 
         const buttonsSectionContainer = document.createElement("div");
-        buttonsSectionContainer.className = "d-flex flex-column justify-content-center m-auto";
+        buttonsSectionContainer.className = "d-flex flex-column justify-content-center m-2";
 
         const buttonsTitle = document.createElement("p");
         buttonsTitle.className = "text-center text-nowrap p-0 m-0";
