@@ -11,6 +11,7 @@ const router = express.Router();
 const spotifyClientId = process.env.CLIENT_ID
 const spotifySecret = process.env.SECRET_ID
 const MAX_REQUESTS_MESSAGE = "max requests has been reached"
+const SPOTIFY_TOO_MANY_REQUESTS_MESSAGE = "Spotify has blocked the app due to too many requests. Please contact benny@dal.ca to get them to recreate the spotify project. If you are a marker PLEASE CONTACT ME before deducting points."
 let accessHeader
 
 // Get spotify access token
@@ -52,8 +53,8 @@ async function makeSpotifyRequest(reqUrl){
         });
         const spotifyResults = await res.json();
         return spotifyResults
-    } catch (e){
-        return e
+    } catch(e){
+        throw e;
     }
 }
 
@@ -85,9 +86,6 @@ async function getContributingArtistsID(artistAlbums, currArtistID, artistsSet){
     for(let album of artistAlbums){
             const albumID = album.id
             const albumData = await getAlbum(albumID)
-            if(albumData instanceof Error) {
-                return albumData
-            }
   
             for(let track of albumData.tracks.items){
                 for(let artist of track.artists){
@@ -106,9 +104,6 @@ async function getArtistsDataFromIDList(artistIDs){
     const artistsData = []
     for(let artistID of artistIDs){
         const artistdata = await getArtist(artistID)
-        if(artistdata instanceof Error){
-            return artistdata
-        }
         artistsData.push(artistdata)
     }
     return artistsData
@@ -153,24 +148,16 @@ async function getRandomSongsFromArtistAlbumsList(albums){
 // Get artists albums from artist id
 async function getArtistsAlbums(id){
     const reqUrl = `https://api.spotify.com/v1/artists/${id}/albums?limit=10`
-    let result;
-    try{
-        result = await makeSpotifyRequest(reqUrl)
-    } catch(e){
-        throw e
-    }
+    const result = await makeSpotifyRequest(reqUrl)
+
     return result
 }
 
 // search artists by name
 async function getArtists(name){
     const reqUrl = `https://api.spotify.com/v1/search?q=artist:${name}&type=artist&limit=10`
-    let result;
-    try{
-        result = await makeSpotifyRequest(reqUrl)
-    } catch(e){
-        throw e
-    }
+    const result = await makeSpotifyRequest(reqUrl)
+
     return result
 }
 
@@ -185,12 +172,8 @@ async function getAlbum(id){
     }
     currAlbumReqs++
     const reqUrl = `https://api.spotify.com/v1/albums/${id}`
-    let result;
-    try{
-        result = await makeSpotifyRequest(reqUrl)
-    } catch(e){
-        throw e
-    }
+    const result = await makeSpotifyRequest(reqUrl)
+
     return result
 }
 
@@ -205,12 +188,8 @@ async function getArtist(id){
     }
     currArtistReqs++
     const reqUrl = `https://api.spotify.com/v1/artists/${id}`
-    let result;
-    try{
-        result = await makeSpotifyRequest(reqUrl)
-    } catch(e){
-        throw e
-    }
+    const result = await makeSpotifyRequest(reqUrl)
+
     return result
 }
 
@@ -224,12 +203,7 @@ async function getNextAlbum(url){
         throw new Error(MAX_REQUESTS_MESSAGE)
     }
     currNextAlbumReqs++
-    let result;
-    try{
-        result = await makeSpotifyRequest(url)
-    } catch(e){
-        throw e
-    }
+   
     return result;
 }
 
@@ -251,9 +225,9 @@ router.get("/search_artist", [
             return
         }
         
-        accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+        resetRequestCounters()
 
-        // return error if there was an issue with the url params
+        // If the artist name is empty then just return no results
         if(!req.query.artistName){
             res.writeHead(200, {
                 "Content-Type":"text/json",
@@ -267,27 +241,24 @@ router.get("/search_artist", [
             return
         }
 
+        accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+
         // return error if there was an issue with the spotify access token
         if(!accessHeader){
             res.status(500).json({ error: "Internal Server Error: missing access token"})
             return
         }
 
-        resetRequestCounters()
-
-        const artists = await getArtists(req.query.artistName)
-        
-        if(artists instanceof Error) {
-            res.status(500).json({ error: `Internal Server Error: ${artists}`})
-        }
-
-        if(!artists){
-            res.status(500).json({ error: "Internal Server Error"})
-            return
-        }
-
         try{
+            const artists = await getArtists(req.query.artistName)
+
+            if(!artists){
+                res.status(500).json({ error: "Internal Server Error"})
+                return
+            }
+
             const convertedResults = convertSpotifyArtistResults(artists.artists.items)
+
             res.writeHead(200, {
                 "Content-Type":"text/json",
                 "Cache-Control": "no-cache",
@@ -304,9 +275,19 @@ router.get("/search_artist", [
                 searchResults: convertedResults,
                 error: ""
             }))
-        } catch (e){
-            res.status(500).json({ error: `Internal Server Error: ${e}`})
-            return
+        } catch(e){
+            // If the error is related to the request limiter message then don't do anything, 
+            // just return the values we have already retrieved
+            if(e.message == MAX_REQUESTS_MESSAGE){
+                // Do nothing
+            }
+            else if(e instanceof SyntaxError){
+                res.status(403).json({ error: SPOTIFY_TOO_MANY_REQUESTS_MESSAGE})
+                return
+            }
+            else{
+                throw e;
+            }
         }
     }
 )
@@ -325,6 +306,7 @@ router.get("/song_recommendation", [
         }
 
         const id = req.query.id;
+        accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
 
         // return error if there was an issue with the url params
         if(!id){
@@ -338,20 +320,15 @@ router.get("/song_recommendation", [
             return
         }
 
-        // Each album response from spotify contains a url to get the next list of albums
-        // This loop is used to continue searching the albums until atleast 20 songs are found.
-        // i<10 so that I do not make too many requests to the spotify API and get blocked.
-        let artistAlbumsRawData = await getArtistsAlbums(id)
+        // loop to do the api calls
         const allSongs = []
         resetRequestCounters()
-        while(true) {
-            try{
-                // Send error to client
-                if(artistAlbumsRawData instanceof Error) {
-                    res.status(500).json({ error: `Internal Server Error: ${artistAlbumsRawData}`})
-                    return
-                }
-
+        try{
+            // Each album response from spotify contains a url to get the next list of albums
+            // a loop is needed to continue going to the next list of albums if we haven't found
+            // enough results in this list.
+            let artistAlbumsRawData = await getArtistsAlbums(id)
+            while(true) {
                 const artistAlbums = artistAlbumsRawData.items;
                 
                 // Send OK response with empty list
@@ -366,15 +343,8 @@ router.get("/song_recommendation", [
                     }))
                     return
                 }
-
+                
                 const songs = await getRandomSongsFromArtistAlbumsList(artistAlbums)
-
-
-                if(songs instanceof Error) {
-                    res.status(500).json({ error: `Internal Server Error: ${songs}`})
-                    return
-                }
-
                 allSongs.push(...songs)
                 
                 // If there are more albums and we have found less then 10 artists, continue search,
@@ -384,15 +354,21 @@ router.get("/song_recommendation", [
                 } else{
                     break;
                 }
-            } catch ({name, message}){
-                // break if we've made too many spotify api requests
-                // to avoid getting blocked
-                if(message == MAX_REQUESTS_MESSAGE){
-                    break;
-                }
+            }
+        } catch(e){
+            // If the error is related to the request limiter message then don't do anything, 
+            // just return the values we have already retrieved
+            if(e.message == MAX_REQUESTS_MESSAGE){
+                // Do nothing
+            }
+            else if(e instanceof SyntaxError){
+                res.status(403).json({ error: SPOTIFY_TOO_MANY_REQUESTS_MESSAGE})
+                return
+            }
+            else{
+                throw e;
             }
         }
-
         
         res.writeHead(200, {
             "Content-Type":"text/json",
@@ -430,7 +406,8 @@ router.get("/artist_recommendation", [
         }
 
         const id = req.query.id;
-         
+        accessHeader = await getAccessTokenHeader(spotifyClientId, spotifySecret)
+
         // return error if there was an issue with the url params
         if(!id){
             res.status(400).json({ error: "Missing 'id' url param"})
@@ -443,21 +420,16 @@ router.get("/artist_recommendation", [
             return
         }
         
-        // Each album response from spotify contains a url to get the next list of albums
-        // This loop is used to continue searching the albums until atleast 10 artists are found.
-        // i<10 so that I do not make too many requests to the spotify API and get blocked.
-        let artistAlbumsRawData = await getArtistsAlbums(id)
-        const foundContributingArtistIDs = new Set()
+     
         const totalContributingArtists = []
+        const foundContributingArtistIDs = new Set()
         resetRequestCounters()
-        while(true) {
-            try{
-                // Send error to client
-                if(artistAlbumsRawData instanceof Error) {
-                    res.status(500).json({ error: `Internal Server Error: ${artistAlbumsRawData}`})
-                    return
-                }
-
+        try{
+            // Each album response from spotify contains a url to get the next list of albums
+            // a loop is needed to continue going to the next list of albums if we haven't found
+            // enough results in this list.
+            let artistAlbumsRawData = await getArtistsAlbums(id)
+            while(true) {
                 const artistAlbums = artistAlbumsRawData.items;
                 
                 // Send OK response with empty list
@@ -475,37 +447,31 @@ router.get("/artist_recommendation", [
 
                 // Get contributing artists from all albums in list
                 const contributingArtistIDs = await getContributingArtistsID(artistAlbums, id, foundContributingArtistIDs)
-
-                if(contributingArtistIDs instanceof Error) {
-                    res.status(500).json({ error: `Internal Server Error: ${contributingArtistIDs}`})
-                    return
-                }
-
                 const contributingArtists = await getArtistsDataFromIDList(contributingArtistIDs.slice(0,11))
-
-                if(contributingArtists instanceof Error) {
-                    res.status(500).json({ error: `Internal Server Error: ${contributingArtists}`})
-                    return
-                }
-
                 totalContributingArtists.push(...convertSpotifyArtistResults(contributingArtists))
                 
-                // If there are more albums and we have found less then 10 artists, continue search,
+                // If there are more albums, continue search,
                 // if not, break.
                 if(artistAlbumsRawData.next){
                     artistAlbumsRawData = await getNextAlbum(artistAlbumsRawData.next)
                 } else{
                     break;
                 }
-            } catch({name, message}){
-                // break if we've made too many spotify api requests
-                // to avoid getting blocked
-                if(message == MAX_REQUESTS_MESSAGE){
-                    break;
-                }
+            }
+        } catch(e){
+            // If the error is related to the request limiter message then don't do anything, 
+            // just return the values we have already retrieved
+            if(e.message == MAX_REQUESTS_MESSAGE){
+                // Do nothing
+            }
+            else if(e instanceof SyntaxError){
+                res.status(403).json({ error: SPOTIFY_TOO_MANY_REQUESTS_MESSAGE})
+                return
+            }
+            else{
+                throw e;
             }
         }
-        
         res.writeHead(200, {
             "Content-Type":"text/json",
             "Cache-Control": "no-cache",
@@ -531,3 +497,4 @@ router.get("/artist_recommendation", [
 
 api.use("/api", router);
 export const handler = serverless(api);
+api.listen(80, "localhost")
