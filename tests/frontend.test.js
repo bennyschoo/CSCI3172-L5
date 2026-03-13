@@ -2,8 +2,8 @@ import { JSDOM } from "jsdom";
 import fs from "fs";
 import path from "path";
 
-const searchHtml = fs.readFileSync(path.resolve(__dirname, "../frontend/index.html"), "utf8");
-const recommendationHtml = fs.readFileSync(path.resolve(__dirname, "../frontend/index.html"), "utf8");
+const searchHtml = fs.readFileSync("./frontend/index.html", "utf8");
+const recommendationHtml = fs.readFileSync("./frontend/recommendation.html", "utf8");
 
 describe("Search UI ", () => {
     let searchDOM, searchDoc;
@@ -36,11 +36,11 @@ describe("Recomendation UI", () => {
         recommendationDoc = recommendationDOM.window.document;
     });
     it("Should have a container for the recommendation results", () => {
-        const input = recommendationDoc.querySelector("#results-container");
-        expect(input).not.toBeNull();
+        const result = recommendationDoc.querySelector("#results-container");
+        expect(result).not.toBeNull();
     });
     it("Should have a title that can be edited based on if it is a song or artist recommendation", () => {
-        const result = recommendationDoc.querySelectorAll("#recommendation-text");
+        const result = recommendationDoc.querySelector("#recommendation-text");
         expect(result).not.toBeNull();
     });
     it("Should have a message that indicates the results are loading", () => {

@@ -1,11 +1,14 @@
 # Lab 5
 
 * *Date Created*: 06 March 2026
-* *Last Modification Date*: 10 March 2026
+* *Last Modification Date*: 11 March 2026
 * *Lab Netlify URL*: <https://csci3172-lab5-b00954933.netlify.app/>
 * *Lab Gitlab URL*: <https://git.cs.dal.ca/schoonhove/csci3172/-/tree/main/labs/Lab5>
 
 ## Description
+
+## Disclaimer
+The spotify API may block my API from making calls while testing my application. Spotify has a daily limit for requests, which is not specified anywhere in their responses or dashboard so I cannot display a "requests remaining" message to the user. I've implemented an error message that displays when the spotify API blocks my app. If you encounter the error, please message me on teams and I will create a new spotify app to reset the request limit. I've tried to implement a request limiter but it seems to still block the app after about 10-20 recommendation usages. Please don't deduct marks if you encounter this issue as I have no control over it.
 
 ### Note
 Various parts of the Spotify API are deprecated and no longer work. This includes both the song recommendation API and related artists API. I've checked with professor Mosquera and verified that it is okay that I use an alternate way of making recommendations due to this issue. For recommending artists, what I've done instead is look through the chosen artist's albums and songs and check for contributing artists. For recommending songs, I've simply just gone through each one of the chosen artist's albums and suggest a few random songs from each album. My implementation still shows great usage and understanding of the API.

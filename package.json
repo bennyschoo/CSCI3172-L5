@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node netlify/functions/api.mjs",
-    "test": "jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {
     "type": "git",
@@ -22,12 +22,12 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
+    "jsdom": "^20.0.3",
     "node-fetch": "^3.3.2",
     "serverless-http": "^4.0.0"
   },
   "devDependencies": {
     "jest": "^30.3.0",
-    "jsdom": "^28.1.0",
     "supertest": "^7.2.2"
   }
 }
