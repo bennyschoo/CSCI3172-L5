@@ -2,7 +2,7 @@ const searchForm = document.getElementById("artist-search-form");
 const resultsContainer = document.getElementById("results-container");
 
 async function getSearchResults(searchTerm){
-    const reqUrl = `../api/search_artist?artistName=${searchTerm}`
+    const reqUrl = `../api/search_artist?name=${searchTerm}`
     try{
         const res = await fetch(reqUrl, {
             method: "GET",
